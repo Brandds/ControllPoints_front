@@ -2,7 +2,9 @@ import { useNavigation } from "@react-navigation/native";
 import { Formik } from "formik";
 import React from "react";
 import { Dimensions, ImageBackground, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
-import { LoginScreenNavigationProp } from "../navigation/RootStackParamList";
+import * as Yup from 'yup';
+import { CadastroEmpresaNavigationProp } from "../navigation/RootStackParamList";
+import { empresaService } from "../services/empresaService/empresa.service";
 import colors from "../theme/colors";
 
 
@@ -12,14 +14,22 @@ type Props = {
 const { width, height } = Dimensions.get('window');
 
 const Login: React.FC<Props> = () => {
-  const navigation = useNavigation<LoginScreenNavigationProp>();
+  const navigation = useNavigation<CadastroEmpresaNavigationProp>();
 
   const handleEsqueceuSenha = () => {
     // navigation.navigate(''); // ajuste se for outro nome da rota
   };
   const handleCadastro = () => {
-    // navigation.navigate('Cadastro'); // ajuste se for outro nome da rota
+    navigation.navigate('CadastroEmpresa'); // ajuste se for outro nome da rota
   };
+
+  const handleSubmit = async () => {
+    try {
+      const response = await empresaService.buscaCNPJ("12345678000195");
+    } catch (error) {
+      console.error("Erro ao enviar o formulário:", error);
+    }
+  }
   return (
     <SafeAreaView style={styles.safeArea}>
       <ImageBackground
@@ -29,16 +39,22 @@ const Login: React.FC<Props> = () => {
       >
         <Formik
           initialValues={{ email: '', password: '' }}
-          onSubmit={(values) => {
-            console.log(values);
-            // Aqui você pode adicionar a lógica de autenticação
+          onSubmit={async (values) => {
+            const response = await empresaService.buscaCNPJ("12345678000195");
           }}
+          validationSchema={Yup.object().shape({
+            email: Yup.string()
+              .email('E-mail inválido')
+              .required('E-mail é obrigatório'),
+            password: Yup.string()
+              .min(6, 'A senha deve ter pelo menos 6 caracteres')
+              .required('Senha é obrigatória'),
+          })}
         >
-          {({ handleChange, handleBlur, handleSubmit, values }) => (<View style={styles.overlay}>
+          {({ handleChange, handleBlur, handleSubmit, values, touched, errors }) => (<View style={styles.overlay}>
             <Text style={styles.title}>Bem-vindo</Text>
             <Text style={styles.subtitle}>Acesse sua conta</Text>
 
-            {/* CAMPOS DE LOGIN */}
             <TextInput
               style={styles.input}
               placeholder="E-mail"
@@ -49,6 +65,9 @@ const Login: React.FC<Props> = () => {
               onChangeText={handleChange('email')}
             />
 
+            {touched.email && errors.email && (
+              <Text style={styles.errorText}>{errors.email}</Text>
+            )}
             <TextInput
               style={styles.input}
               placeholder="Senha"
@@ -57,18 +76,15 @@ const Login: React.FC<Props> = () => {
               value={values.password}
               onChangeText={handleChange('password')}
             />
-
-            {/* LINK ESQUECEU A SENHA */}
+            {touched.password && errors.password && (
+              <Text style={styles.errorText}>{errors.password}</Text>
+            )}
             <TouchableOpacity onPress={handleEsqueceuSenha}>
               <Text style={styles.linkText}>Esqueceu a senha?</Text>
             </TouchableOpacity>
-
-            {/* BOTÃO DE LOGIN */}
             <TouchableOpacity style={styles.buttonPrimary} onPress={() => handleSubmit()}>
               <Text style={styles.buttonText}>Entrar</Text>
             </TouchableOpacity>
-
-            {/* BOTÃO DE CADASTRO */}
             <TouchableOpacity style={styles.buttonSecondary} onPress={handleCadastro}>
               <Text style={styles.buttonTextSecondary}>Criar conta</Text>
             </TouchableOpacity>
@@ -147,6 +163,12 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontWeight: "bold",
     fontSize: 16,
+  },
+  errorText: {
+    color: 'red',
+    fontSize: 13,
+    marginBottom: 8,
+    marginLeft: 4,
   },
 });
 export default Login;
