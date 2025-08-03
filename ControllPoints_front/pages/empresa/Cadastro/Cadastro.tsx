@@ -2,6 +2,7 @@ import { useNavigation } from '@react-navigation/native';
 import { Formik } from 'formik';
 import React from 'react';
 import {
+  Alert,
   ImageBackground,
   SafeAreaView,
   ScrollView,
@@ -9,11 +10,12 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
-import { TextInput } from 'react-native-gesture-handler';
+import { TextInputMask } from 'react-native-masked-text';
 import * as Yup from 'yup';
-import { CadastroEmpresaNavigationProp } from '../../navigation/RootStackParamList';
-import { empresaService } from '../../services/empresaService/empresa.service';
-import { ReceitaWSResponse } from '../../types/types';
+import { CadastroEmpresaNavigationProp } from '../../../navigation/RootStackParamList';
+import { empresaService } from '../../../services/empresaService/empresa.service';
+import { ReceitaWSResponse } from '../../../types/types';
+import { DadosCadastroEmpresa } from './DadosCadastroEmpresa';
 
 
 
@@ -55,22 +57,34 @@ const CadastroEmpresa: React.FC = () => {
     // lógica para envio à API...
   };
 
+  function unmaskCNPJ(cnpj: string) {
+    return cnpj.replace(/[^\d]+/g, '');
+  }
+
   const handleSearchCNPJ = async (cnpj: string) => {
+    const cnpjSemMasdcara = unmaskCNPJ(cnpj);
     try {
-      const receita = await empresaService.buscaCNPJ(cnpj);
+      const receita = await empresaService.buscaCNPJ(cnpjSemMasdcara);
       console.log('Empresa encontrada:', receita);
       setValues(receita);
       setViewMode(true);
-      console.log('Dados da values:', values);
-    } catch (error) {
-      console.error('Erro ao buscar CNPJ:', error);
+    } catch (error: any) {
+      const status = error?.response?.status || error?.status;
+      if (status === 404) {
+        console.log('Erro ao buscar CNPJ:', error);
+      } else if (status === 400) {
+        console.log('CNPJ inválido:', error);
+        Alert.alert('CNPJ inválido', 'Por favor, verifique o CNPJ informado.');
+      } else {
+        console.log('Erro inesperado ao buscar CNPJ:', error);
+      }
     }
-  };
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <ImageBackground
-        source={require('../../assets/images/fundoBackground.png')}
+        source={require('../../../assets/images/fundoBackground.png')}
         style={styles.background}
         resizeMode="cover"
       >
@@ -90,34 +104,30 @@ const CadastroEmpresa: React.FC = () => {
                 values, errors, touched,
               }) => (
                 <>
-                  <View style={{ marginBottom: 12 }}>
-                    <TextInput
+                  <View style={{ marginBottom: 12, gap: 8 }}>
+                    <TextInputMask
+                      type={'cnpj'}
                       style={styles.input}
                       placeholder="Buscar sua empresa pelo CNPJ"
                       placeholderTextColor="#aaa"
                       value={values.cnpj}
                       onChangeText={handleChange('cnpj')}
-                    ></TextInput>
+                    />
                     <TouchableOpacity style={styles.buttonPrimary} onPress={() => handleSearchCNPJ(values.cnpj)}>
                       <Text style={styles.buttonText}>Buscar</Text>
                     </TouchableOpacity>
+                    {viewMode && (
+                      <DadosCadastroEmpresa
+                        {...values}
+                        handleChange={handleChange}
+                        onBlur={handleBlur}
+                        errors={errors}
+                        touched={touched}
+                      ></DadosCadastroEmpresa>
+                    )}
                   </View>
 
-                  {viewMode && values.cnpj && Object.keys(values).map((key: string) => (
-                    <View key={key} style={{ marginBottom: 12 }}>
-                      <TextInput
-                        style={styles.input}
-                        placeholder={key.replace('_', ' ').toUpperCase()}
-                        placeholderTextColor="#aaa"
-                        value={(values as any)[key]}
-                        onChangeText={handleChange(key)}
-                        onBlur={handleBlur(key)}
-                      />
-                      {touched[key as keyof typeof touched] && (errors as any)[key] && (
-                        <Text style={styles.errorText}>{(errors as any)[key]}</Text>
-                      )}
-                    </View>
-                  ))}
+
 
                   {viewMode && values.cnpj && <TouchableOpacity style={styles.buttonPrimary} onPress={() => handleSubmit()}>
                     <Text style={styles.buttonText}>Cadastrar</Text>
