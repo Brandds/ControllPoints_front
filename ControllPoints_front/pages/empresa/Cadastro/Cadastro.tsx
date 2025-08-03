@@ -66,8 +66,12 @@ const CadastroEmpresa: React.FC = () => {
     try {
       const receita = await empresaService.buscaCNPJ(cnpjSemMasdcara);
       console.log('Empresa encontrada:', receita);
-      setValues(receita);
-      setViewMode(true);
+      console.log("testes");
+      if (receita?.cnpj != null && receita?.cnpj != undefined) {
+        Alert.alert('Empresa encontrada', `CNPJ: ${receita.cnpj}`);
+        setValues(receita);
+        setViewMode(true);
+      }
     } catch (error: any) {
       const status = error?.response?.status || error?.status;
       if (status === 404) {
@@ -80,6 +84,7 @@ const CadastroEmpresa: React.FC = () => {
       }
     }
   }
+
 
   return (
     <SafeAreaView style={styles.safeArea}>

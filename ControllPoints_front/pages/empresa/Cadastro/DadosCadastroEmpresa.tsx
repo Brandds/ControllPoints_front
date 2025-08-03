@@ -1,9 +1,11 @@
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Picker } from "@react-native-picker/picker";
 import { FormikHandlers } from "formik";
-import { useState } from "react";
-import { Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { useEffect, useState } from "react";
+import { Alert, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { TextInputMask } from "react-native-masked-text";
+import { ibgeService } from "../../../services/integracoes/ibge/ibge.service";
+import { IBGEEstado } from "../../../types/types";
 
 
 type Props = {
@@ -31,6 +33,7 @@ type Props = {
 
 export const DadosCadastroEmpresa: React.FC<Props> = (values: Props) => {
   const [showDataAbertura, setShowDataAbertura] = useState(false);
+  const [optionsEstados, setOptionsEstados] = useState<IBGEEstado[]>()
 
   const onChangeDataAbertura = (event: any, selectedDate?: Date) => {
     setShowDataAbertura(Platform.OS === 'ios');
@@ -39,6 +42,19 @@ export const DadosCadastroEmpresa: React.FC<Props> = (values: Props) => {
       values.handleChange('abertura')(dataFormatada);
     }
   };
+
+  useEffect(() => {
+    const fetchEstados = async () => {
+      try {
+        const response = await ibgeService.getEstados();
+        setOptionsEstados(response.data);
+      } catch (error) {
+        Alert.alert('Erro', 'Não foi possível carregar os estados. Tente novamente mais tarde.');
+      }
+    };
+    fetchEstados();
+  }, []);
+
   return (
     <View style={{ gap: 12 }}>
       <TextInput
@@ -191,6 +207,10 @@ export const DadosCadastroEmpresa: React.FC<Props> = (values: Props) => {
         style={styles.inputSelect}
       >
         <Picker.Item label="Selecione o estado da empresa" value="" />
+        {optionsEstados?.map((estado) => (
+          <Picker.Item key={estado.sigla} label={estado.nome} value={estado.sigla} />
+        ))}
+
         <Picker.Item label="SP" value="SP" />
       </Picker>
       {values.touched.uf && values.errors.uf && (

@@ -17,3 +17,14 @@ export  interface ReceitaWSResponse{
      situacao: string,
      capital_social: string,
 }
+
+export interface IBGEEstado{
+     id: number;
+     sigla: string;
+     nome: string;
+}
+
+export interface IBGEEstadoResponse {
+     data: IBGEEstado[];
+     status: number;
+}

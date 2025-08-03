@@ -1,3 +1,4 @@
 export const URL_BASE = {
-  EMPRESA: "empresa"
+  EMPRESA: "empresa",
+  IBGE: 'IBGE',
 }
